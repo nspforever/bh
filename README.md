@@ -1,4 +1,1 @@
-bh
-==
-
-Boilerplate game based on html
+Boilerplate game based on HTML5
