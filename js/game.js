@@ -1,10 +1,18 @@
 var spriteMap = {
-    ship: {
+    ship : {
         sx: 0,
         sy: 0,
         w: 37,
         h: 42,
         frames: 3
+    },
+    
+    missile : {
+        sx: 0,
+        sy: 30,
+        w: 2,
+        h: 10,
+        frames : 1
     }
 };
 
@@ -19,7 +27,9 @@ var startGame = function() {
 
 var playGame = function() {
     Game.setBoard(3, new TitleScreen("Alien Invasion", "Game Started"));
-    Game.setBoard(3, new PlayerShip());
+    var board = new GameBoard();
+    board.add(new PlayerShip());
+    Game.setBoard(3, board);
 }
 
 window.addEventListener("load", function() {
@@ -34,6 +44,10 @@ var PlayerShip = function() {
     this.vx = 0;
     this.vy = 0;
     this.maxVel = 200;
+    this.reloadTime = 0.25; // Reload each 1/4 second
+    // Avoid player immediately firing a missle when press fir to start the game
+    this.reload = this.reloadTime; 
+    
     this.step = function(dt) {
         if (Game.keys["left"]) {
             this.vx = -this.maxVel;
@@ -69,6 +83,15 @@ var PlayerShip = function() {
         }
         else if (this.y > Game.height - 10 - this.h) {
             this.y = Game.height - 10 - this.h;
+        }
+        this.reload -= dt;
+        if(Game.keys["fire"] && this.reload < 0) {
+            Game.keys["fire"] = false;
+            this.reload = this.reloadTime;
+            // Shooting left
+            this.board.add(new PlayerMissile(this.x, this.y + this.h /2)); 
+            // Shooting right
+            this.board.add(new PlayerMissile(this.x + this.w, this.y + this.h / 2));
         }
     };
 
