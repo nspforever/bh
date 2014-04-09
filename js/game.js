@@ -13,7 +13,50 @@ var spriteMap = {
         w: 2,
         h: 10,
         frames : 1
+    },
+    
+    enemy_purple: {
+        sx: 37,
+        sy: 0,
+        w: 42,
+        h: 43,
+        frame: 1
+    },
+    
+    enemy_bee: {
+        sx: 79,
+        sy: 0,
+        w: 37,
+        h: 43,
+        frames: 1
+    },
+    
+    enemy_ship: {
+        sx: 116,
+        sy: 0,
+        w: 42,
+        h: 43,
+        frames: 1
+    },
+    
+    enemy_circle: {
+        sx: 158,
+        sy: 0,
+        w: 32,
+        h: 33,
+        frames: 1
     }
+};
+
+var enemies = {
+    basic: {
+        x: 100,
+        y: -50,
+        sprite: 'enemy_purple', 
+        B: 100, 
+        C: 2, 
+        E: 100
+    }  
 };
 
 var startGame = function() {
@@ -28,6 +71,25 @@ var startGame = function() {
 var playGame = function() {
     Game.setBoard(3, new TitleScreen("Alien Invasion", "Game Started"));
     var board = new GameBoard();
+    board.add(new Enemy(enemies.basic));
+    board.add(new Enemy(enemies.basic, {x: 200}));
+    board.add(new Enemy(enemies.basic, {
+        x: 50,
+        y: -50,
+        sprite: 'enemy_bee', 
+        B: 0, 
+        C: 2, 
+        E: 100
+    }));
+    board.add(new Enemy(enemies.basic, {
+        x: 10,
+        y: -50,
+        sprite: 'enemy_ship', 
+        B: 0, 
+        C: 2, 
+        E: 100
+    }));
+    
     board.add(new PlayerShip());
     Game.setBoard(3, board);
 }
@@ -86,7 +148,7 @@ var PlayerShip = function() {
         }
         this.reload -= dt;
         if(Game.keys["fire"] && this.reload < 0) {
-            Game.keys["fire"] = false;
+            //Game.keys["fire"] = false;
             this.reload = this.reloadTime;
             // Shooting left
             this.board.add(new PlayerMissile(this.x, this.y + this.h /2)); 
