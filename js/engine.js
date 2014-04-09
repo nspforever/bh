@@ -109,6 +109,10 @@ Sprite.prototype.draw = function(ctx) {
     SpriteSheet.draw(ctx, this.spriteName, this.x, this.y, this.frame);
 };
 
+Sprite.prototype.hit = function(damage) {
+    this.board.remove(this); // regardless of the damage for initial version
+};
+
 var Starfield = function(speed, opacity, numStarts, clear) {
     var i = 0;
     var stars = document.createElement("canvas");
@@ -190,7 +194,7 @@ var GameBoard = function() {
     };
     
     this.remove = function(obj) {
-        var wasStillAlive = this.removed.indexOf(obj) != -1;
+        var wasStillAlive = this.removed.indexOf(obj) == -1;
         if(wasStillAlive) {
             this.removed.push(obj);
         }
