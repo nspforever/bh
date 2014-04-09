@@ -76,7 +76,7 @@ var playGame = function() {
     board.add(new Enemy(enemies.basic, {
         x: 50,
         y: -50,
-        sprite: 'enemy_bee', 
+        spriteName: 'enemy_bee', 
         B: 0, 
         C: 2, 
         E: 100
@@ -84,7 +84,7 @@ var playGame = function() {
     board.add(new Enemy(enemies.basic, {
         x: 10,
         y: -50,
-        sprite: 'enemy_ship', 
+        spriteName: 'enemy_ship', 
         B: 0, 
         C: 2, 
         E: 100
@@ -99,14 +99,9 @@ window.addEventListener("load", function() {
 });
 
 var PlayerShip = function() {
-    this.w = SpriteSheet.map["ship"].w;
-    this.h = SpriteSheet.map["ship"].h;
+    this.setup("ship", {vx: 0, vy: 0, reloadTime: 0.25, maxVel: 200});
     this.x = Game.width / 2 - this.w / 2;
     this.y = Game.height - 10 - this.h;
-    this.vx = 0;
-    this.vy = 0;
-    this.maxVel = 200;
-    this.reloadTime = 0.25; // Reload each 1/4 second
     // Avoid player immediately firing a missle when press fir to start the game
     this.reload = this.reloadTime; 
     
@@ -156,8 +151,45 @@ var PlayerShip = function() {
             this.board.add(new PlayerMissile(this.x + this.w, this.y + this.h / 2));
         }
     };
-
-    this.draw = function(ctx) {
-        SpriteSheet.draw(ctx, "ship", this.x, this.y, 0);
-    };
 }
+
+PlayerShip.prototype = new Sprite();
+
+var PlayerMissile = function (x, y) {
+    this.setup("missile", { vy: -700 });
+    this.x = x - this.w / 2;
+    this.y = y - this.h;
+};
+
+PlayerMissile.prototype = new Sprite();
+
+PlayerMissile.prototype.step = function(dt) {
+    this.y += dt * this.vy;
+    if(this.y < -this.h) {
+        this.board.remove(this);
+    }
+};
+
+var Enemy = function(blueprint, override) {
+    this.merge(this.baseParameters);
+    this.setup(blueprint.sprite, blueprint);
+    this.merge(override);
+};
+    
+Enemy.prototype = new Sprite();
+
+Enemy.prototype.baseParameters = { A: 0, B: 0, C: 0, D: 0,
+                           E: 0, F: 0, G: 0, H: 0};  
+
+Enemy.prototype.step = function(dt) {
+    this.t += dt;
+    this.vx = this.A + this.B * Math.sin(this.C + this.D);
+    this.vy = this.E + this.F * Math.sin(this.G + this.H);
+    this.x += this.vx * dt;
+    this.y += this.vy * dt;
+    
+    if(this.y > Game.height || this.x < -this.w || this.x > Game.width) {
+        this.board.remove(this);
+    }
+};
+

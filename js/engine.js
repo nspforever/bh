@@ -86,6 +86,28 @@ var SpriteSheet = new function() {
             s.w, s.h);
         };
     }
+    
+var Sprite = function() { }
+
+Sprite.prototype.setup = function(spriteName, props) {
+    this.spriteName = spriteName;
+    this.merge(props);
+    this.frame = this.frame || 0;
+    this.w = SpriteSheet.map[spriteName].w;
+    this.h = SpriteSheet.map[spriteName].h;
+};
+
+Sprite.prototype.merge = function(props) {
+    if(props) {
+        for(var prop in props) {
+            this[prop] = props[prop];
+        }
+    }
+};
+
+Sprite.prototype.draw = function(ctx) {
+    SpriteSheet.draw(ctx, this.spriteName, this.x, this.y, this.frame);
+};
 
 var Starfield = function(speed, opacity, numStarts, clear) {
     var i = 0;
@@ -235,62 +257,8 @@ var GameBoard = function() {
     };
 }
 
-var PlayerMissile = function (x, y) {
-    this.w = SpriteSheet.map["missile"].w;
-    this.h = SpriteSheet.map["missile"].h;
-    
-    this.x = x - this.w / 2;
-    this.y = y - this.h;
-    this.vy = -700;
-};
 
-PlayerMissile.prototype.step = function(dt) {
-    this.y += dt * this.vy;
-    if(this.y < -this.h) {
-        this.board.remove(this);
-    }
-};
 
-PlayerMissile.prototype.draw = function(ctx) {
-    SpriteSheet.draw(ctx, "missile", this.x, this.y);
-};
 
-var Enemy = function(blueprint, override) {
-    var baseParameters = { A: 0, B: 0, C: 0, D: 0,
-                           E: 0, F: 0, G: 0, H: 0};  
-    
-    for(var prop in baseParameters) {
-        this[prop] = baseParameters[prop];
-    }
-    
-    for(prop in blueprint) {
-        this[prop] = blueprint[prop];
-    }
-    
-    if(override) {
-        for(prop in override) {
-            this[prop] = override[prop];
-        }
-    }
-    
-    this.w = SpriteSheet.map[this.sprite].w;
-    this.h = SpriteSheet.map[this.sprite].h;
-    this.t = 0;
-                           
-};
 
-Enemy.prototype.step = function(dt) {
-    this.t += dt;
-    this.vx = this.A + this.B * Math.sin(this.C + this.D);
-    this.vy = this.E + this.F * Math.sin(this.G + this.H);
-    this.x += this.vx * dt;
-    this.y += this.vy * dt;
-    
-    if(this.y > Game.height || this.x < -this.w || this.x > Game.width) {
-        this.board.remove(this);
-    }
-};
 
-Enemy.prototype.draw = function(ctx) {
-    SpriteSheet.draw(ctx, this.sprite, this.x, this.y);
-};
