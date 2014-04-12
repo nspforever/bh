@@ -89,6 +89,9 @@ var startGame = function() {
     Game.setBoard(1, new Starfield(50, 0.6, 100));
     Game.setBoard(2, new Starfield(100, 1.0, 50));
     Game.setBoard(3, new TitleScreen("Alien Invasion", "Press 'up' button to start playing", playGame));
+    if(Game.mobile) {
+           Game.setBoard(4, new TouchControls());
+    }
 
 };
 
@@ -109,13 +112,15 @@ var loseGame = function() {
 };
 
 window.addEventListener("load", function() {
+    console.log("loading game...");
     Game.initialize("game", spriteMap, startGame);
+    console.log("Game initialzied.");
 });
 
 var PlayerShip = function() {
     this.setup("ship", {vx: 0, vy: 0, reloadTime: 0.25, maxVel: 200});
     this.x = Game.width / 2 - this.w / 2;
-    this.y = Game.height - 10 - this.h;
+    this.y = Game.height - Game.playerOffset - this.h;
     // Avoid player immediately firing a missle when press fir to start the game
     this.reload = this.reloadTime; 
     
@@ -219,9 +224,9 @@ Enemy.prototype.baseParameters = { A: 0, B: 0, C: 0, D: 0,
 Enemy.prototype.step = function(dt) {
     this.t += dt * 100;     
     var arc = this.t % 360 * Math.PI/2;
-    console.log(this.spriteName + ":" + arc);
+    //console.log(this.spriteName + ":" + arc);
     this.vx = this.direction * (this.A + this.B * Math.sin(this.C * arc + this.D));
-    console.log("vx:" + this.vx);
+    //console.log("vx:" + this.vx);
     this.vy = this.E + this.F * Math.sin(this.G + this.H);
     this.x += this.vx * dt;
     this.y += this.vy * dt;

@@ -1,3 +1,104 @@
+var TouchControls = function() {
+    var gutterWidth = 10;
+    var unitWidth = Game.width / 5;
+    var blockWidth = unitWidth - gutterWidth;
+    
+    this.drawSquare = function(ctx, x, y, text, on) {
+        ctx.globalAlpha = on ? 0.9 : 06;
+        ctx.fillStyle = "#CCC";
+        ctx.fillRect(x, y, blockWidth, blockWidth);
+        
+        ctx.fileStyle = "#FFF";
+        ctx.textAlign = "center";
+        ctx.globalAlpha = 1.0;
+        ctx.font = "blod " + (3 * unitWidth / 4) + "px arial";
+        ctx.fillText(text, x + blockWidth / 2, y + 3 * blockWidth / 4 + 5);
+    };
+    
+    this.draw = function(ctx) {
+        ctx.save();
+        var yLoc = Game.height - unitWidth;
+        
+        this.drawSquare(ctx, gutterWidth, yLoc, "\u25C0", Game.keys["left"]);
+        this.drawSquare(ctx, unitWidth + gutterWidth, yLoc, "\u25B6", Game.keys["right"]);
+        this.drawSquare(ctx, 4 * unitWidth, yLoc, "A", Game.keys["fire"]);
+        ctx.restore();
+    };
+    
+    this.step = function(dt) {};
+    
+    this.trackTouch = function(e) {
+        var touch, x, i;
+        e.preventDefault();
+        console.log("Tracking touch");
+        Game.keys["left"] = false;
+        Game.keys["right"] = false;
+        
+        console.log("e.targetTouches:");
+        console.log(e.targetTouches);
+        console.log("e.type:");
+        console.log(e.type);
+        
+        for(var key in e) {
+           var value = e[key]; 
+           console.log(key + ":" + value);
+        }
+        x = e.pageX / Game.canvasMultiplier - Game.canvas.offsetLeft;
+        var pointerDown = (e.type === "MSPointerDown");
+        if(x < unitWidth) {
+            Game.keys["left"] = pointerDown;
+        }
+        
+        if(x > unitWidth && x < 2 * unitWidth) {
+            Game.keys["right"] = pointerDown;
+        }
+        
+        if(x > 2 * unitWidth && x < 3 * unitWidth) {
+            Game.keys["up"] = pointerDown;
+        }
+        Game.keys["fire"] = true;
+
+        /*for(i = 0; i < e.targetTouches.length; ++i) {
+            touch = e.targetTouches[i];
+            x = touch.pageX / Game.canvasMultiplier - Game.canvas.offsetLeft;
+            if(x < unitWidth) {
+                Game.keys["left"] = true;
+            }
+            
+            if(x > unitWidth && x < 2 * unitWidth) {
+                Game.keys["right"] = true;
+            }
+        }*/
+        
+        if(e.type === "touchstart" || e.type === "touchend" || e.type === "MSPointerDown") {
+            //Game.keys["fire"] = (e.type === "touchstart" || e.type === "MSPointerDown");
+            /*for(i = 0; i < e.changedTouches.length; ++i) {
+                x = touch.pageX / Game.canvasMultiplier - Game.canvas.offsetLeft;
+                if(x > 4 * unitWidth) {
+                    Game.keys["fire"] = (e.type === "touchstart" || e.type === "MSPointerDown");
+                }
+            }*/
+        }
+    };
+    if (window.navigator.msPointerEnabled) {
+        console.log("Hooking MS point events");
+        
+        Game.canvas.addEventListener("MSPointerDown", this.trackTouch, true);
+        Game.canvas.addEventListener("MSPointerMove", this.trackTouch, true);
+        Game.canvas.addEventListener("MSPointerUp", this.trackTouch, true);
+    }
+    try {
+        Game.canvas.addEventListener("touchstart", this.trackTouch, true);
+        Game.canvas.addEventListener("touchmove", this.trackTouch, true);
+        Game.canvas.addEventListener("touchend", this.trackTouch, true);
+        Game.playerOffset = unitWidth + 20;
+    }
+    catch(err) {
+        console.log("err:" + err);
+    }
+    
+}
+
 var Game = new function() {
         // Init Game
         var KEY_CODES = {
@@ -10,9 +111,15 @@ var Game = new function() {
         var boards = [];
 
         this.initialize = function(canvasElementId, spriteData, callback) {
+            console.log("initialzing game");
             this.canvas = document.getElementById(canvasElementId);
+            
             this.width = this.canvas.width;
             this.height = this.canvas.height;
+            
+            this.playerOffset = 10;
+            this.canvasMultiplier= 1;
+            this.setupMobile();
 
             this.ctx = this.canvas && this.canvas.getContext("2d");
             if (!this.ctx) {
@@ -61,6 +168,48 @@ var Game = new function() {
 
         this.setBoard = function(num, board) {
             boards[num] = board;
+        };
+        
+        this.setupMobile = function() {
+            var container = document.getElementById("container"),
+                hasTouch = ("ontouchstart" in window) || window.navigator.msPointerEnabled,
+                w = window.innerWidth,
+                h = window.innerHeight;
+                
+            console.log("hasTouch:" + ("ontouchstart" in window).toString());
+            if (hasTouch) {
+                this.mobile = true;
+                console.log("Set Game.mobile to true");
+            }
+            
+            if (screen.width >= 1280 || !hasTouch) {
+                return false;
+            }
+            if (w > h) {
+                alert("Please rotate the device and then click OK");
+                w = window.innerWidth;
+                h = window.innerHeight;
+            }
+            container.style.height = h * 2 + "px";
+            window.scrollTo(0, 1);
+            h = window.innerHeight + 2;
+            container.style.height = h + "px";
+            container.style.width = w + "px";
+            container.style.padding = 0;
+            if (h >= this.canvas.height * 1.75 || w >= this.canvas.height * 1.75) {
+                this.canvasMultiplier = 2;
+                this.canvas.width = w / 2;
+                this.canvas.height = h / 2;
+                this.canvas.style.width = w + "px";
+                this.canvas.style.height = h + "px";
+            }
+            else {
+                this.canvas.width = w;
+                this.canvas.height = h;
+            }
+            this.canvas.style.position = 'absolute';
+            this.canvas.style.left = "0px";
+            this.canvas.style.top = "0px";
         };
     }
 
@@ -164,7 +313,8 @@ var Starfield = function(speed, opacity, numStarts, clear) {
 
 var TitleScreen = function TitleScreen(title, subtitle, callback) {
     this.step = function(dt) {
-        if(Game.keys['up'] && callback) callback();  
+        if(Game.keys['up'] && callback) callback(); 
+        Game.keys['up'] = false;
     };
     
     this.draw = function (ctx) {
@@ -309,6 +459,9 @@ Level.prototype.step = function(dt) {
 };
 
 Level.prototype.draw = function() {};
+
+
+
 
 
 
