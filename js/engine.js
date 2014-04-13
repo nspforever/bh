@@ -36,39 +36,51 @@ var TouchControls = function() {
         
         console.log("e.targetTouches:");
         console.log(e.targetTouches);
-        console.log("e.type:");
-        console.log(e.type);
+        console.log("e.type:" + e.type.toString());
         
-        for(var key in e) {
+        
+        /*for(var key in e) {
            var value = e[key]; 
            console.log(key + ":" + value);
-        }
-        x = e.pageX / Game.canvasMultiplier - Game.canvas.offsetLeft;
-        var pointerDown = (e.type === "MSPointerDown");
-        if(x < unitWidth) {
-            Game.keys["left"] = pointerDown;
-        }
+        }*/
         
-        if(x > unitWidth && x < 2 * unitWidth) {
-            Game.keys["right"] = pointerDown;
-        }
         
-        if(x > 2 * unitWidth && x < 3 * unitWidth) {
-            Game.keys["up"] = pointerDown;
-        }
-        Game.keys["fire"] = true;
-
-        /*for(i = 0; i < e.targetTouches.length; ++i) {
-            touch = e.targetTouches[i];
-            x = touch.pageX / Game.canvasMultiplier - Game.canvas.offsetLeft;
+        
+        var pointerDown = (e.type === "MSPointerDown") || (e.type === "touchstart");
+        if(e.type === "touchstart") {
+            for(i = 0; i < e.targetTouches.length; ++i) {
+                touch = e.targetTouches[i];
+                x = touch.pageX / Game.canvasMultiplier - Game.canvas.offsetLeft;
+                console.log("x:" + x.toString());
+                if(x < unitWidth) {
+                    Game.keys["left"] = true;
+                }
+                
+                if(x > unitWidth && x < 2 * unitWidth) {
+                    Game.keys["right"] = true;
+                }
+                
+                if(x > 2 * unitWidth && x < 3 * unitWidth) {
+                    Game.keys["up"] = pointerDown;
+                }
+            }
+        } else {
+            x = e.pageX / Game.canvasMultiplier - Game.canvas.offsetLeft;
+            console.log("x:" + x.toString());
             if(x < unitWidth) {
-                Game.keys["left"] = true;
+            Game.keys["left"] = pointerDown;
             }
             
             if(x > unitWidth && x < 2 * unitWidth) {
-                Game.keys["right"] = true;
+                Game.keys["right"] = pointerDown;
             }
-        }*/
+            
+            if(x > 2 * unitWidth && x < 3 * unitWidth) {
+                Game.keys["up"] = pointerDown;
+            }
+        }
+        
+        Game.keys["fire"] = true;
         
         if(e.type === "touchstart" || e.type === "touchend" || e.type === "MSPointerDown") {
             //Game.keys["fire"] = (e.type === "touchstart" || e.type === "MSPointerDown");
@@ -80,17 +92,36 @@ var TouchControls = function() {
             }*/
         }
     };
+    
+    this.trackDeviceOrientation = function(e) {
+        console.log("trackDeviceOrientation");
+        e.preventDefault();
+        /*for(var key in e) {
+           var value = e[key]; 
+           console.log(key + ":" + value);
+        }*/
+        
+        if(e.alpha < 180) {
+            console.log("turn left");
+        } else if(e.alpha > 180) {
+            console.log("turn right");
+        }
+    };
+    
     if (window.navigator.msPointerEnabled) {
         console.log("Hooking MS point events");
         
         Game.canvas.addEventListener("MSPointerDown", this.trackTouch, true);
         Game.canvas.addEventListener("MSPointerMove", this.trackTouch, true);
         Game.canvas.addEventListener("MSPointerUp", this.trackTouch, true);
+        window.addEventListener("deviceorientation", this.trackDeviceOrientation, true);
     }
     try {
         Game.canvas.addEventListener("touchstart", this.trackTouch, true);
         Game.canvas.addEventListener("touchmove", this.trackTouch, true);
         Game.canvas.addEventListener("touchend", this.trackTouch, true);
+        //window.addEventListener("orientationchange", this.trackDeviceOrientation, false);
+        window.addEventListener("deviceorientation", this.trackDeviceOrientation, true);
         Game.playerOffset = unitWidth + 20;
     }
     catch(err) {
@@ -111,9 +142,9 @@ var Game = new function() {
         var boards = [];
 
         this.initialize = function(canvasElementId, spriteData, callback) {
+            
             console.log("initialzing game");
             this.canvas = document.getElementById(canvasElementId);
-            
             this.width = this.canvas.width;
             this.height = this.canvas.height;
             
@@ -171,10 +202,9 @@ var Game = new function() {
         };
         
         this.setupMobile = function() {
-            var container = document.getElementById("container"),
-                hasTouch = ("ontouchstart" in window) || window.navigator.msPointerEnabled,
-                w = window.innerWidth,
-                h = window.innerHeight;
+            var hasTouch = ("ontouchstart" in window) || window.navigator.msPointerEnabled;
+            var w = window.innerWidth;
+            var h = window.innerHeight;
                 
             console.log("hasTouch:" + ("ontouchstart" in window).toString());
             if (hasTouch) {
@@ -264,48 +294,51 @@ Sprite.prototype.hit = function(damage) {
 
 var Starfield = function(speed, opacity, numStarts, clear) {
     var i = 0;
-    var stars = document.createElement("canvas");
-    stars.width = Game.width;
-    stars.height = Game.height;
+    this.stars = document.createElement("canvas");
+    
+    this.stars.width = Game.width;
+    this.stars.height = Game.height;
 
-    var starCtx = stars.getContext("2d");
+    var starCtx = this.stars.getContext("2d");
     var offset = 0;
 
     if (clear) {
         starCtx.fillStyle = "#000";
-        starCtx.fillRect(0, 0, stars.width, stars.height);
+        starCtx.fillRect(0, 0, this.stars.width, this.stars.height);
     }
 
     starCtx.fillStyle = "#FFF";
     starCtx.globalAlpha = opacity;
 
     for (; i < numStarts; ++i) {
-        starCtx.fillRect(Math.floor(Math.random() * stars.width),
-        Math.floor(Math.random() * stars.height),
+        starCtx.fillRect(Math.floor(Math.random() * this.stars.width),
+        Math.floor(Math.random() * this.stars.height),
         2, 2);
     }
 
     this.draw = function(ctx) {
         var intOffset = Math.floor(offset);
-        var remaining = stars.height - intOffset;
+        var remaining = this.stars.height - intOffset;
+        //this.stars.width = Game.width;
+        //this.stars.height = Game.height;
         if (intOffset > 0) {
-            ctx.drawImage(stars, 0, remaining,
-            stars.width, intOffset,
+            ctx.drawImage(this.stars, 0, remaining,
+            this.stars.width, intOffset,
             0, 0,
-            stars.width, intOffset);
+            this.stars.width, intOffset);
         }
 
         if (remaining > 0) {
-            ctx.drawImage(stars, 0, 0,
-            stars.width, remaining,
+            ctx.drawImage(this.stars, 0, 0,
+            this.stars.width, remaining,
             0, intOffset,
-            stars.width, remaining);
+            this.stars.width, remaining);
         }
     };
 
     this.step = function(dt) {
         offset += dt * speed;
-        offset = offset % stars.height;
+        offset = offset % this.stars.height;
     };
 
 
@@ -460,10 +493,51 @@ Level.prototype.step = function(dt) {
 
 Level.prototype.draw = function() {};
 
+var Score = function() {
+    Game.score = 0;
+    var scoreLength = 8;
+    
+    this.draw = function(ctx) {
+        ctx.save();
+        
+        ctx.font = "bold 18px arial";
+        ctx.fillStyle = "yellow";
+         
+        
+        var text = "" + Game.score;
+        
+        var i = scoreLength - text.length, zeros = "";
+        
+        while(i > 0) {
+            zeros += "0";
+            i--;
+        }
+        
+        ctx.fillText("score:" + zeros + text, 80, 20);
+        
+        ctx.restore();
+    };
+    
+    this.step = function(dt) {  };
+    
+}
 
-
-
-
-
+var HealthPoint = function(player) {
+    var length = 5;
+    
+    this.draw = function(ctx) {
+        ctx.save();
+        
+        ctx.font = "bold 18px arial";
+        ctx.fillStyle = "green";
+        var hp = player.health || 0;
+         
+        ctx.fillText("hp:" + player.health, 200, 20);
+        
+        ctx.restore();
+    };
+    
+    this.step = function(dt) {  };
+}
 
 
