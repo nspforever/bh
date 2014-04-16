@@ -1,12 +1,12 @@
 $(function() {
     var links = $("#gamelist h1 a").map(function() {
         var gameName = this.text;
-        var baseUrl = this.baseURI.substring(0, this.baseURI.lastIndexOf("/"));
+        var baseUrl = window.location.href.substring(0, window.location.href.lastIndexOf("/"));
         this.href = baseUrl + "/" + gameName + ".html";
         
         var qrCodeDiv = document.createElement("div");
-        qrCodeDiv.id = "qrcode_" + gameName;
-        this.appendChild(qrCodeDiv);
+        qrCodeDiv.id = "qrcodediv_" + gameName;
+        this.parentNode.appendChild(qrCodeDiv);
         new QRCode(qrCodeDiv, 
                    { 
                        text: this.href,
@@ -25,7 +25,7 @@ $(function() {
 $(function() {
     var links = $("#goodsufflist h1 a").map(function() {
         var qrCodeDiv = document.createElement("div");
-        this.appendChild(qrCodeDiv);
+        this.parentNode.appendChild(qrCodeDiv);
         new QRCode(qrCodeDiv, 
                    { 
                        text: this.href,
