@@ -30,6 +30,8 @@ var TouchControls = function() {
     this.trackTouch = function(e) {
         var touch, x, i;
         e.preventDefault();
+        console.log("e.stopPropagation");
+        e.stopPropagation();
         console.log("Tracking touch");
         Game.keys["left"] = false;
         Game.keys["right"] = false;
@@ -46,7 +48,7 @@ var TouchControls = function() {
         
         
         
-        var pointerDown = (e.type === "MSPointerDown") || (e.type === "touchstart");
+        var pointerDown = (e.type.toLowerCase().indexOf("down") != -1) || (e.type === "touchstart");
         if(e.type === "touchstart") {
             for(i = 0; i < e.targetTouches.length; ++i) {
                 touch = e.targetTouches[i];
@@ -82,7 +84,7 @@ var TouchControls = function() {
         
         Game.keys["fire"] = true;
         
-        if(e.type === "touchstart" || e.type === "touchend" || e.type === "MSPointerDown") {
+        if(e.type === "touchstart" || e.type === "touchend" || e.type.indexOf("Down") != -1) {
             //Game.keys["fire"] = (e.type === "touchstart" || e.type === "MSPointerDown");
             /*for(i = 0; i < e.changedTouches.length; ++i) {
                 x = touch.pageX / Game.canvasMultiplier - Game.canvas.offsetLeft;
@@ -111,10 +113,10 @@ var TouchControls = function() {
     if (window.navigator.msPointerEnabled) {
         console.log("Hooking MS point events");
         
-        Game.canvas.addEventListener("MSPointerDown", this.trackTouch, true);
-        Game.canvas.addEventListener("MSPointerMove", this.trackTouch, true);
-        Game.canvas.addEventListener("MSPointerUp", this.trackTouch, true);
-        window.addEventListener("deviceorientation", this.trackDeviceOrientation, true);
+        Game.canvas.addEventListener("MSPointerDown", this.trackTouch, false);
+        Game.canvas.addEventListener("MSPointerMove", this.trackTouch, false);
+        Game.canvas.addEventListener("MSPointerUp", this.trackTouch, false);
+        window.addEventListener("deviceorientation", this.trackDeviceOrientation, false);
     }
     try {
         Game.canvas.addEventListener("touchstart", this.trackTouch, true);
@@ -285,7 +287,7 @@ Sprite.prototype.merge = function(props) {
 };
 
 Sprite.prototype.draw = function(ctx) {
-    SpriteSheet.draw(ctx, this.spriteName, this.x, this.y, this.frame);
+    SpriteSheet.draw(ctx, this.spriteName, parseInt(this.x), parseInt(this.y), this.frame);
 };
 
 Sprite.prototype.hit = function(damage) {

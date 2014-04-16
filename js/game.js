@@ -77,8 +77,8 @@ var loseGame = function() {
 
 var body = document.getElementById("body");
 var container = document.getElementById("container");
-container.width = body.clientWidth - 10;
-container.height = window.innerHeight - 20;
+container.width = window.innerWidth;
+container.height = window.innerHeight;
 
 window.addEventListener("load", function() {
     console.log("loading game...");
@@ -87,16 +87,21 @@ window.addEventListener("load", function() {
     gameCanvas.height = container.height;
     
     window.addEventListener("resize", function(e)
-    {
-        //var widthToHeight = 9 / 16;
+    {   
+        //var widthToHeight = gameCanvas.width / gameCanvas.height;
         var newWidth = window.innerWidth;
         var newHeight = window.innerHeight;
-        //var newWidthToHeight = newWidth / newHeight;
-        /*if(newWidthToHeight > widthToHeight) {
+        console.log("resize: " + newWidth + "*" + newHeight);
+        /*var newWidthToHeight = newWidth / newHeight;
+        if(newWidthToHeight > widthToHeight) {
             newWidth = newHeight * widthToHeight;
         } else {
             newHeight = newWidth / widthToHeight;
         }*/
+        //var newWidth = window.innerWidth;
+        //var newHeight = window.innerHeight;
+        //var newWidthToHeight = newWidth / newHeight;
+       
         container.style.height = newHeight + 'px';
         container.style.width = newWidth + 'px';
         
