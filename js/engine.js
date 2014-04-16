@@ -26,111 +26,72 @@ var TouchControls = function() {
     };
     
     this.step = function(dt) {};
-    
-    this.trackTouch = function(e) {
-        var touch, x, i;
-        e.preventDefault();
-        console.log("e.stopPropagation");
-        e.stopPropagation();
-        console.log("Tracking touch");
-        Game.keys["left"] = false;
-        Game.keys["right"] = false;
-        
-        console.log("e.targetTouches:");
-        console.log(e.targetTouches);
-        console.log("e.type:" + e.type.toString());
-        
-        
-        /*for(var key in e) {
-           var value = e[key]; 
-           console.log(key + ":" + value);
-        }*/
-        
-        
-        
-        var pointerDown = (e.type.toLowerCase().indexOf("down") != -1) || (e.type === "touchstart");
-        if(e.type === "touchstart") {
-            for(i = 0; i < e.targetTouches.length; ++i) {
-                touch = e.targetTouches[i];
-                x = touch.pageX / Game.canvasMultiplier - Game.canvas.offsetLeft;
-                console.log("x:" + x.toString());
-                if(x < unitWidth) {
-                    Game.keys["left"] = true;
-                }
-                
-                if(x > unitWidth && x < 2 * unitWidth) {
-                    Game.keys["right"] = true;
-                }
-                
-                if(x > 2 * unitWidth && x < 3 * unitWidth) {
-                    Game.keys["up"] = pointerDown;
-                }
-            }
-        } else {
-            x = e.pageX / Game.canvasMultiplier - Game.canvas.offsetLeft;
-            console.log("x:" + x.toString());
-            if(x < unitWidth) {
-            Game.keys["left"] = pointerDown;
-            }
-            
-            if(x > unitWidth && x < 2 * unitWidth) {
-                Game.keys["right"] = pointerDown;
-            }
-            
-            if(x > 2 * unitWidth && x < 3 * unitWidth) {
-                Game.keys["up"] = pointerDown;
-            }
-        }
-        
-        Game.keys["fire"] = true;
-        
-        if(e.type === "touchstart" || e.type === "touchend" || e.type.indexOf("Down") != -1) {
-            //Game.keys["fire"] = (e.type === "touchstart" || e.type === "MSPointerDown");
-            /*for(i = 0; i < e.changedTouches.length; ++i) {
-                x = touch.pageX / Game.canvasMultiplier - Game.canvas.offsetLeft;
-                if(x > 4 * unitWidth) {
-                    Game.keys["fire"] = (e.type === "touchstart" || e.type === "MSPointerDown");
-                }
-            }*/
-        }
-    };
-    
-    this.trackDeviceOrientation = function(e) {
-        console.log("trackDeviceOrientation");
-        e.preventDefault();
-        /*for(var key in e) {
-           var value = e[key]; 
-           console.log(key + ":" + value);
-        }*/
-        
-        if(e.alpha < 180) {
-            console.log("turn left");
-        } else if(e.alpha > 180) {
-            console.log("turn right");
-        }
-    };
-    
-    if (window.navigator.msPointerEnabled) {
-        console.log("Hooking MS point events");
-        
-        Game.canvas.addEventListener("MSPointerDown", this.trackTouch, false);
-        Game.canvas.addEventListener("MSPointerMove", this.trackTouch, false);
-        Game.canvas.addEventListener("MSPointerUp", this.trackTouch, false);
-        window.addEventListener("deviceorientation", this.trackDeviceOrientation, false);
-    }
-    try {
-        Game.canvas.addEventListener("touchstart", this.trackTouch, true);
-        Game.canvas.addEventListener("touchmove", this.trackTouch, true);
-        Game.canvas.addEventListener("touchend", this.trackTouch, true);
-        //window.addEventListener("orientationchange", this.trackDeviceOrientation, false);
-        window.addEventListener("deviceorientation", this.trackDeviceOrientation, true);
-        Game.playerOffset = unitWidth + 20;
-    }
-    catch(err) {
-        console.log("err:" + err);
-    }
-    
 }
+
+var hookTouchEvent = function(target, callback) {
+    var useSetReleaseCapture = false;
+    if (window.navigator.msPointerEnabled) {
+        console.log("window.navigator.msPointerEnabled");
+        // Microsoft pointer model
+        target.addEventListener("MSPointerDown", callback, false);
+        target.addEventListener("MSPointerMove", callback, false);
+        target.addEventListener("MSPointerUp", callback, false);
+        target.addEventListener("MSPointerCancel", callback, false);
+
+        // css way to prevent panning in our target area
+        if (typeof target.style.msContentZooming != 'undefined') target.style.msContentZooming = "none";
+
+        // new in Windows Consumer Preview: css way to prevent all built-in touch actions on our target
+        // without this, you cannot touch draw on the element because IE will intercept the touch events
+        if (typeof target.style.msTouchAction != 'undefined') target.style.msTouchAction = "none";
+    }
+    else if (target.addEventListener) {
+
+        // iOS touch model
+        target.addEventListener("touchstart", callback, false);
+        target.addEventListener("touchmove", callback, false);
+        target.addEventListener("touchend", callback, false);
+        target.addEventListener("touchcancel", callback, false);
+
+        // mouse model
+        target.addEventListener("mousedown", callback, false);
+
+        // mouse model with capture
+        // rejecting gecko because, unlike ie, firefox does not send events to target when the mouse is outside target
+        if (target.setCapture && !window.navigator.userAgent.match(/\bGecko\b/)) {
+            useSetReleaseCapture = true;
+
+            target.addEventListener("mousemove", callback, false);
+            target.addEventListener("mouseup", callback, false);
+        }
+    }
+    else if (target.attachEvent && target.setCapture) {
+        console.log(target.attachEvent && target.setCapture)
+        // legacy IE mode - mouse with capture
+        useSetReleaseCapture = true;
+        target.attachEvent("onmousedown", function() {
+            callback(window.event);
+            window.event.returnValue = false;
+            return false;
+        });
+        target.attachEvent("onmousemove", function() {
+            callback(window.event);
+            window.event.returnValue = false;
+            return false;
+        });
+        target.attachEvent("onmouseup", function() {
+            callback(window.event);
+            window.event.returnValue = false;
+            return false;
+        });
+
+        console.log("Using legacy IE mode - mouse model with capture");
+    }
+    else {
+        console.log("Unexpected combination of supported features");
+    }
+};
+
 
 var Game = new function() {
         // Init Game
@@ -139,7 +100,8 @@ var Game = new function() {
             38: "up",
             39: "right",
             40: "down",
-            32: "fire"
+            32: "fire",
+            13: "start",
         };
         var boards = [];
 
@@ -149,6 +111,7 @@ var Game = new function() {
             this.canvas = document.getElementById(canvasElementId);
             this.width = this.canvas.width;
             this.height = this.canvas.height;
+            this.started = false;
             
             this.playerOffset = 10;
             this.canvasMultiplier= 1;
@@ -164,7 +127,7 @@ var Game = new function() {
 
             // Start game loop
             this.loop();
-
+            
             SpriteSheet.load(spriteData, callback);
 
         };
@@ -184,7 +147,10 @@ var Game = new function() {
                     e.preventDefault();
                 }
             }, false);
-
+            if(Game.mobile) {
+               hookTouchEvent(Game.canvas, this.trackTouch);
+            }
+            
         };
 
         this.loop = function() {
@@ -243,6 +209,46 @@ var Game = new function() {
             this.canvas.style.left = "0px";
             this.canvas.style.top = "0px";
         };
+        
+        this.trackTouch = function(e) {
+        
+            Game.keys["fire"] = true;
+            console.log(e.type);
+            //PreventDefaultManipulationAndMouseEvent(theEvtObj);
+        
+            var pointerList = e.changedTouches ? e.changedTouches : [e];
+            for (var i = 0; i < pointerList.length; ++i) {
+                var pointerObj = pointerList[i];
+        
+                if (e.type.match(/(start|down)$/i)) {
+                    // clause for processing MSPointerDown, touchstart, and mousedown
+                    if (Game.started === false) {
+                        Game.keys["start"] = true;
+                    }
+                    
+                    Game.playerShip.targetX = pointerObj.pageX;
+                    if (Game.playerShip) {
+                        if (pointerObj.pageX - Game.playerShip.x > 5) {
+                            console.log("pointerObj.pageX - Game.playerShip.x > 5: " + (pointerObj.pageX - Game.playerShip.x));
+                            Game.playerShip.targetX = pointerObj.pageX;
+                            Game.keys["right"] = true;
+                        }
+                        else if (pointerObj.pageX - Game.playerShip.x < -5) {
+                            console.log("pointerObj.pageX - Game.playerShip.x < -5: " + (pointerObj.pageX - Game.playerShip.x));
+                            Game.keys["left"] = true;
+                        }
+                    }
+                }
+                else if (e.type.match(/move$/i)) {
+
+                    
+                }
+                else if (e.type.match(/(up|end|cancel)$/i)) {
+                    Game.keys["left"] = false;
+                    Game.keys["right"] = false;
+                }
+            };
+}
     }
 
 var SpriteSheet = new function() {
@@ -348,8 +354,8 @@ var Starfield = function(speed, opacity, numStarts, clear) {
 
 var TitleScreen = function TitleScreen(title, subtitle, callback) {
     this.step = function(dt) {
-        if(Game.keys['up'] && callback) callback(); 
-        Game.keys['up'] = false;
+        if(Game.keys["start"] && callback) callback(); 
+        Game.keys["start"] = false;
     };
     
     this.draw = function (ctx) {

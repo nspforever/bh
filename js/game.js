@@ -48,19 +48,23 @@ var startGame = function() {
     Game.setBoard(0, new Starfield(20, 0.4, 100, true));
     Game.setBoard(1, new Starfield(50, 0.6, 100));
     Game.setBoard(2, new Starfield(100, 1.0, 50));
-    Game.setBoard(3, new TitleScreen("Alien Invasion", "Press 'up' button to start playing", playGame));
-    Game.setBoard(4, new Score(0));
     if(Game.mobile) {
-           Game.setBoard(5, new TouchControls());
+        Game.setBoard(3, new TitleScreen("Alien Invasion", "Tap to start.", playGame));   
+    } else {
+        Game.setBoard(3, new TitleScreen("Alien Invasion", "Press 'Enter' to start.", playGame));   
     }
-    
-
+    Game.setBoard(4, new Score(0));
+    /*if(Game.mobile) {
+           Game.setBoard(5, new TouchControls());
+    }*/
 };
 
 var playGame = function() {
     Game.setBoard(3, new TitleScreen("Alien Invasion", "Game Started"));
+    Game.started = true;
     var board = new GameBoard();
     var player = new PlayerShip();
+    Game.playerShip = player;
     board.add(player);
     board.add(new HealthPoint(player));
     board.add(new Level(level1, winGame));
@@ -68,11 +72,21 @@ var playGame = function() {
 };
 
 var winGame = function() {
-    Game.setBoard(3, new TitleScreen("You win!", "Press 'up' button to play again", playGame));
+    Game.started = false;
+    if(Game.mobile) {
+        Game.setBoard(3, new TitleScreen("You win!", "Tap to start.", playGame));   
+    } else {
+        Game.setBoard(3, new TitleScreen("You win!", "Press 'Enter' to start.", playGame));   
+    }
 };
 
 var loseGame = function() {
-    Game.setBoard(3, new TitleScreen("You lose!", "Press 'up' button to play again", playGame));  
+    Game.started = false;
+    if(Game.mobile) {
+        Game.setBoard(3, new TitleScreen("You lose!", "Tap to start.", playGame));   
+    } else {
+        Game.setBoard(3, new TitleScreen("You lose!", "Press 'Enter' to start.", playGame));   
+    }
 };
 
 var body = document.getElementById("body");
@@ -145,8 +159,13 @@ var PlayerShip = function() {
         else {
             this.vy = 0;
         }
-
-        this.x += this.vx * dt;
+        if(!this.targetX) {
+            this.x += this.vx * dt;
+        }
+        else if(Math.abs(this.targetX - this.x) > 5) {
+            this.x += this.vx * dt;
+        }
+        
         this.y += this.vy * dt;
         if (this.x < 0) {
             this.x = 0;
@@ -171,7 +190,7 @@ var PlayerShip = function() {
             this.board.add(new PlayerMissile(this.x + this.w, this.y + this.h / 2));
         }
     };
-}
+};
 
 PlayerShip.prototype = new Sprite();
 
