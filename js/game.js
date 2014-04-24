@@ -161,6 +161,7 @@ var PlayerShip = function() {
     // Avoid player immediately firing a missle when press fir to start the game
     this.reload = this.reloadTime; 
     this.health = 100;
+    this.missileSoundStopped = true;
     
     this.step = function(dt) {
         if (Game.keys["left"]) {
@@ -211,14 +212,27 @@ var PlayerShip = function() {
             this.board.add(new PlayerMissile(this.x, this.y + this.h /2)); 
             // Shooting right
             this.board.add(new PlayerMissile(this.x + this.w, this.y + this.h / 2));
-            if(!this.missileSoundIns || (this.missileSoundIns && this.missileSoundStopped)){
+            if(this.missileSoundStopped) {
                 console.log("Play sound after it stopped");
-                this.missileSoundStopped = false;
-                this.missileSoundIns = createjs.Sound.play("laser");
                 var that = this;
-                this.missileSoundIns.addEventListener("complete", function() {
-                    that.missileSoundStopped = true;    
-                });
+                this.missileSoundStopped = false;
+                if(this.missileSoundIns) {
+                    console.log("Re-play the sound");
+                    console.log("Before setTimeout");
+                    setTimeout(function() {
+                        console.log("In setTimout");
+                        that.missileSoundIns.play();
+                        
+                    }, dt * 1000);
+                } else {
+                   console.log("Play sound for the 1st time");
+                   this.missileSoundIns = createjs.Sound.play("laser");
+                   this.missileSoundIns.addEventListener("complete", function() {
+                       console.log("Stopping the sound");
+                       that.missileSoundIns.stop();
+                       that.missileSoundStopped = true;    
+                   });
+                }
             } 
         }
     };
