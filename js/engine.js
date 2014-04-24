@@ -92,6 +92,40 @@ var hookTouchEvent = function(target, callback) {
     }
 };
 
+var unhookTouchEvent = function(target, callback) {
+    var useSetReleaseCapture = false;
+    if (window.navigator.msPointerEnabled) {
+        console.log("window.navigator.msPointerEnabled");
+        // Microsoft pointer model
+        target.removeEventListener("MSPointerDown", callback, false);
+        target.removeEventListener("MSPointerMove", callback, false);
+        target.removeEventListener("MSPointerUp", callback, false);
+        target.removeEventListener("MSPointerCancel", callback, false);
+
+    }
+    else if (target.addEventListener) {
+
+        // iOS touch model
+        target.removeEventListener("touchstart", callback, false);
+        target.removeEventListener("touchmove", callback, false);
+        target.removeEventListener("touchend", callback, false);
+        target.removeEventListener("touchcancel", callback, false);
+
+        // mouse model
+        target.removeEventListener("mousedown", callback, false);
+
+        // mouse model with capture
+        // rejecting gecko because, unlike ie, firefox does not send events to target when the mouse is outside target
+        if (target.setCapture && !window.navigator.userAgent.match(/\bGecko\b/)) {
+            useSetReleaseCapture = true;
+
+            target.removeEventListener("mousemove", callback, false);
+            target.removeEventListener("mouseup", callback, false);
+        }
+    }
+};
+
+
 
 var Game = new function() {
         // Init Game
@@ -112,6 +146,7 @@ var Game = new function() {
             this.width = this.canvas.width;
             this.height = this.canvas.height;
             this.started = false;
+            this.soundLoaded = false;
             
             this.playerOffset = 10;
             this.canvasMultiplier= 1;
@@ -211,7 +246,7 @@ var Game = new function() {
         };
         
         this.trackTouch = function(e) {
-        
+           
             Game.keys["fire"] = true;
             console.log(e.type);
             //PreventDefaultManipulationAndMouseEvent(theEvtObj);
@@ -226,8 +261,8 @@ var Game = new function() {
                         Game.keys["start"] = true;
                     }
                     
-                    Game.playerShip.targetX = pointerObj.pageX;
                     if (Game.playerShip) {
+                        Game.playerShip.targetX = pointerObj.pageX;
                         if (pointerObj.pageX - Game.playerShip.x > 5) {
                             console.log("pointerObj.pageX - Game.playerShip.x > 5: " + (pointerObj.pageX - Game.playerShip.x));
                             Game.playerShip.targetX = pointerObj.pageX;

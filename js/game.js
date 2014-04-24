@@ -48,11 +48,7 @@ var startGame = function() {
     Game.setBoard(0, new Starfield(20, 0.4, 100, true));
     Game.setBoard(1, new Starfield(50, 0.6, 100));
     Game.setBoard(2, new Starfield(100, 1.0, 50));
-    if(Game.mobile) {
-        Game.setBoard(3, new TitleScreen("Alien Invasion", "Tap to start.", playGame));   
-    } else {
-        Game.setBoard(3, new TitleScreen("Alien Invasion", "Press 'Enter' to start.", playGame));   
-    }
+    Game.setBoard(3, new TitleScreen("Loading...", "Please wait")); 
     Game.setBoard(4, new Score(0));
     /*if(Game.mobile) {
            Game.setBoard(5, new TouchControls());
@@ -69,15 +65,21 @@ var playGame = function() {
     board.add(new HealthPoint(player));
     board.add(new Level(level1, winGame));
     Game.setBoard(3, board);
+    Game.BGSoundInstance = createjs.Sound.play("bg");
 };
 
 var winGame = function() {
     Game.started = false;
     if(Game.mobile) {
-        Game.setBoard(3, new TitleScreen("You win!", "Tap to start.", playGame));   
+        Game.setBoard(3, new TitleScreen("You win!", "Tap to start.", playGame));
     } else {
         Game.setBoard(3, new TitleScreen("You win!", "Press 'Enter' to start.", playGame));   
     }
+    
+    if(Game.BGSoundInstance) {
+        Game.BGSoundInstance.stop();    
+    }
+    
 };
 
 var loseGame = function() {
@@ -86,6 +88,10 @@ var loseGame = function() {
         Game.setBoard(3, new TitleScreen("You lose!", "Tap to start.", playGame));   
     } else {
         Game.setBoard(3, new TitleScreen("You lose!", "Press 'Enter' to start.", playGame));   
+    }
+    
+    if(Game.BGSoundInstance) {
+        Game.BGSoundInstance.stop();    
     }
 };
 
@@ -126,9 +132,26 @@ window.addEventListener("load", function() {
         Game.height = newHeight;
     }, false);
     
-    
+    var queue = new createjs.LoadQueue();
+    queue.installPlugin(createjs.Sound);
     Game.initialize("game", spriteMap, startGame);
     console.log("Game initialzied.");
+    
+    
+    queue.addEventListener("complete", function()
+    {
+        if(Game.mobile) {
+            Game.setBoard(3, new TitleScreen("Alien Invasion", "Tap to start.", playGame));   
+        } else {
+            Game.setBoard(3, new TitleScreen("Alien Invasion", "Press 'Enter' to start.", playGame));   
+        }
+    });
+    queue.loadManifest([{id: "laser", src:"sound/laserweapon.mp3"}, 
+                        {id: "explosion", src:"sound/explosion.mp3"},
+                        {id: "bg", src:"sound/daybreak.mp3"}
+                        ]);
+    
+    
 });
 
 var PlayerShip = function() {
@@ -138,7 +161,7 @@ var PlayerShip = function() {
     // Avoid player immediately firing a missle when press fir to start the game
     this.reload = this.reloadTime; 
     this.health = 100;
-   
+    
     this.step = function(dt) {
         if (Game.keys["left"]) {
             this.vx = -this.maxVel;
@@ -188,6 +211,15 @@ var PlayerShip = function() {
             this.board.add(new PlayerMissile(this.x, this.y + this.h /2)); 
             // Shooting right
             this.board.add(new PlayerMissile(this.x + this.w, this.y + this.h / 2));
+            if(!this.missileSoundIns || (this.missileSoundIns && this.missileSoundStopped)){
+                console.log("Play sound after it stopped");
+                this.missileSoundStopped = false;
+                this.missileSoundIns = createjs.Sound.play("laser");
+                var that = this;
+                this.missileSoundIns.addEventListener("complete", function() {
+                    that.missileSoundStopped = true;    
+                });
+            } 
         }
     };
 };
@@ -298,6 +330,7 @@ var Explosion = function(x, y) {
     this.x = x - this.w / 2;
     this.y = y - this.h / 2;
     this.subFrame = 0;
+    createjs.Sound.play("explosion");
 };
 
 Explosion.prototype = new Sprite();
