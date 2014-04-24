@@ -249,8 +249,12 @@ var Game = new function() {
            
             Game.keys["fire"] = true;
             console.log(e.type);
-            //PreventDefaultManipulationAndMouseEvent(theEvtObj);
-        
+            /* Call e.preventDefault has below effect
+               1. Prevent scroll on iphone
+               2. No mouse events will get generated for touch
+               3. No effect on Window Phone 8
+            */
+            e.preventDefault(); //No scroll on iphone
             var pointerList = e.changedTouches ? e.changedTouches : [e];
             for (var i = 0; i < pointerList.length; ++i) {
                 var pointerObj = pointerList[i];
@@ -275,10 +279,10 @@ var Game = new function() {
                     }
                 }
                 else if (e.type.match(/move$/i)) {
-
                     
                 }
                 else if (e.type.match(/(up|end|cancel)$/i)) {
+                    console.log("Touch end");
                     Game.keys["left"] = false;
                     Game.keys["right"] = false;
                 }
